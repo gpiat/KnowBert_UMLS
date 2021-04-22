@@ -1,20 +1,24 @@
-from typing import List, Set, Tuple, Dict
+from typing import Dict
+from typing import List
 
-import torch
 import numpy as np
 
-from allennlp.data import DatasetReader, Token
-from allennlp.data.token_indexers import SingleIdTokenIndexer, TokenIndexer
-from allennlp.data.fields import Field, TextField, LabelField, SpanField, ListField, ArrayField, MetadataField
-from allennlp.data.instance import Instance
-from allennlp.common import Registrable
-from allennlp.common.checks import ConfigurationError
 from allennlp.common import Params
+from allennlp.common.checks import ConfigurationError
 from allennlp.common.file_utils import cached_path
+from allennlp.data import DatasetReader
+from allennlp.data import Token
+from allennlp.data.fields import ArrayField
+from allennlp.data.fields import ListField
+from allennlp.data.fields import MetadataField
+from allennlp.data.fields import SpanField
+from allennlp.data.fields import TextField
+from allennlp.data.instance import Instance
+from allennlp.data.token_indexers import SingleIdTokenIndexer
+from allennlp.data.token_indexers import TokenIndexer
 
-from kb.wiki_linking_util import WikiCandidateMentionGenerator, MentionGenerator
-from kb.entity_linking import TokenCharactersIndexerTokenizer
-from kb.bert_tokenizer_and_candidate_generator import TokenizerAndCandidateGenerator
+from kb.wiki_linking_util import MentionGenerator
+from kb.wiki_linking_util import WikiCandidateMentionGenerator
 
 
 INDEXER_DEFAULT = {
@@ -22,9 +26,9 @@ INDEXER_DEFAULT = {
     "tokenizer": {
         "type": "word",
             "word_splitter": {"type": "just_spaces"},
-        },
-        "namespace": "entity"
-    }
+    },
+    "namespace": "entity"
+}
 
 
 @DatasetReader.register("aida_wiki_linking")
@@ -41,8 +45,8 @@ class LinkingReader(DatasetReader):
     .
     *NL*
 
-    I.e one word per line, with `MMSTART_{wiki_id}` denoting the begining of entities and
-    *NL* denoting new line boundaries.
+    I.e one word per line, with `MMSTART_{wiki_id}` denoting the begining
+    of entities and *NL* denoting new line boundaries.
 
     Documents are separated with:
 
@@ -62,17 +66,20 @@ class LinkingReader(DatasetReader):
 
         lazy = False
         super().__init__(lazy)
-        self.token_indexers = token_indexers or {"token": SingleIdTokenIndexer("token")}
+        self.token_indexers = token_indexers or\
+            {"token": SingleIdTokenIndexer("token")}
         self.entity_indexer = {"ids": entity_indexer}
         self.separator = {"*NL*"}
         if granularity == "sentence":
             self.separator.add(".")
 
         if granularity not in {"sentence", "paragraph"}:
-            raise ConfigurationError("Valid arguments for granularity are 'sentence' or 'paragraph'.")
+            raise ConfigurationError("Valid arguments for granularity "
+                                     "are 'sentence' or 'paragraph'.")
 
         self.entity_disambiguation_only = entity_disambiguation_only
-        self.mention_generator = mention_generator or WikiCandidateMentionGenerator()
+        self.mention_generator = mention_generator or\
+            WikiCandidateMentionGenerator()
         self.should_remap_span_indices = should_remap_span_indices
 
         self.extra_candidate_generators = extra_candidate_generators
@@ -91,12 +98,17 @@ class LinkingReader(DatasetReader):
                 if line in self.separator and not in_mention:
                     if line == ".":
                         words.append(line)
-                    # if we have continuous *NL* *NL* do not return empty chunks
+                    # if we have continuous *NL* *NL*
+                    # do not return empty chunks
                     if len(words) > 0:
-                        processed = self.mention_generator.get_mentions_with_gold(" ".join(words), gold_spans,
-                                                                                  gold_entities, whitespace_tokenize=True, keep_gold_only=self.entity_disambiguation_only)
+                        processed =\
+                            self.mention_generator.get_mentions_with_gold(
+                                " ".join(words), gold_spans,
+                                gold_entities, whitespace_tokenize=True,
+                                keep_gold_only=self.entity_disambiguation_only)
                         if processed["candidate_spans"]:
-                            yield self.text_to_instance(doc_id=doc_id, **processed)
+                            yield self.text_to_instance(doc_id=doc_id,
+                                                        **processed)
                     # Reset state
                     words = []
                     gold_spans = []
@@ -120,8 +132,11 @@ class LinkingReader(DatasetReader):
                 else:
                     words.append(line)
         if words:
-            processed = self.mention_generator.get_mentions_with_gold(" ".join(words), gold_spans,
-                                                                      gold_entities, whitespace_tokenize=True, keep_gold_only=self.entity_disambiguation_only)
+            processed =\
+                self.mention_generator.get_mentions_with_gold(
+                    " ".join(words), gold_spans, gold_entities,
+                    whitespace_tokenize=True,
+                    keep_gold_only=self.entity_disambiguation_only)
             if processed["candidate_spans"]:
                 yield self.text_to_instance(doc_id=doc_id, **processed)
 
@@ -135,12 +150,15 @@ class LinkingReader(DatasetReader):
 
         assert doc_id is not None
 
-        token_field = TextField([Token(x) for x in tokenized_text], self.token_indexers)
-        span_fields = ListField([SpanField(*span, token_field) for span in candidate_spans])
+        token_field = TextField([Token(x)
+                                 for x in tokenized_text], self.token_indexers)
+        span_fields = ListField([SpanField(*span, token_field)
+                                 for span in candidate_spans])
 
         candidate_entities = TextField(
-                [Token(" ".join(candidate_list)) for candidate_list in candidate_entities],
-                token_indexers=self.entity_indexer)
+            [Token(" ".join(candidate_list))
+             for candidate_list in candidate_entities],
+            token_indexers=self.entity_indexer)
 
         max_cands = max(len(p) for p in candidate_entity_prior)
         for p in candidate_entity_prior:
@@ -151,7 +169,7 @@ class LinkingReader(DatasetReader):
 
         # only one segment
         candidate_segment_ids = ArrayField(
-                np.array([0] * len(candidate_entities)), dtype=np.int
+            np.array([0] * len(candidate_entities)), dtype=np.int
         )
 
         fields = {
@@ -160,7 +178,7 @@ class LinkingReader(DatasetReader):
             "candidate_entities": candidate_entities,
             "candidate_entity_prior": prior_field,
             "candidate_segment_ids": candidate_segment_ids
-            }
+        }
         if gold_entities:
             labels = TextField([Token(entity) for entity in gold_entities],
                                token_indexers=self.entity_indexer)
@@ -171,9 +189,12 @@ class LinkingReader(DatasetReader):
         if self.extra_candidate_generators:
             tokens = " ".join(tokenized_text)
             extra_candidates = {
-                    key: generator.get_mentions_raw_text(tokens, whitespace_tokenize=True)
-                    for key, generator in self.extra_candidate_generators.items()
+                key: generator.get_mentions_raw_text(tokens,
+                                                     whitespace_tokenize=True)
+                for key, generator in self.extra_candidate_generators.items()
             }
             fields['extra_candidates'] = MetadataField(extra_candidates)
 
-        return Instance(fields, should_remap_span_indices=self.should_remap_span_indices)
+        return Instance(
+            fields,
+            should_remap_span_indices=self.should_remap_span_indices)
