@@ -1,18 +1,19 @@
-
 import json
-
 import torch
 
-from pytorch_pretrained_bert.modeling import \
-        BertLayer, BertAttention, BertSelfAttention, BertSelfOutput, \
-        BertOutput, BertIntermediate, BertEncoder, BertLayerNorm, BertConfig
+from pytorch_pretrained_bert.modeling import BertAttention
+from pytorch_pretrained_bert.modeling import BertEncoder
+from pytorch_pretrained_bert.modeling import BertIntermediate
+from pytorch_pretrained_bert.modeling import BertLayer
+from pytorch_pretrained_bert.modeling import BertLayerNorm
+from pytorch_pretrained_bert.modeling import BertOutput
+from pytorch_pretrained_bert.modeling import BertSelfAttention
+from pytorch_pretrained_bert.modeling import BertSelfOutput
 
 from allennlp.common.registrable import Registrable
 from allennlp.training.metrics.metric import Metric
 
-import spacy
 from spacy.tokens import Doc
-
 
 
 class MentionGenerator(Registrable):
@@ -54,10 +55,11 @@ class F1Metric(Metric):
     Takes two lists of predicted and gold elements and computes F1.
     Only requirements are that the elements are hashable.
     """
+
     def __init__(self, filter_func=None):
         self.reset()
         if filter_func is None:
-            filter_func = lambda x: True
+            def filter_func(x): return True
         self.filter_func = filter_func
 
     def reset(self):
@@ -74,8 +76,10 @@ class F1Metric(Metric):
         recall : float
         f1-measure : float
         """
-        precision = float(self._true_positives) / float(self._true_positives + self._false_positives + 1e-13)
-        recall = float(self._true_positives) / float(self._true_positives + self._false_negatives + 1e-13)
+        precision = float(self._true_positives) / \
+            float(self._true_positives + self._false_positives + 1e-13)
+        recall = float(self._true_positives) / \
+            float(self._true_positives + self._false_negatives + 1e-13)
         f1_measure = 2. * ((precision * recall) / (precision + recall + 1e-13))
         if reset:
             self.reset()
@@ -121,9 +125,11 @@ def get_dtype_for_module(module):
     # will be moved to GPU or cast to half after construction.
     return next(module.parameters()).dtype
 
+
 def set_requires_grad(module, requires_grad):
     for param in module.parameters():
         param.requires_grad_(requires_grad)
+
 
 def extend_attention_mask_for_bert(mask, dtype):
     # mask = (batch_size, timesteps)
@@ -144,8 +150,8 @@ def init_bert_weights(module, initializer_range, extra_modules_without_weights=(
         BertOutput, BertIntermediate
     ) + extra_modules_without_weights
 
-
     # modified from pytorch_pretrained_bert
+
     def _do_init(m):
         if isinstance(m, (torch.nn.Linear, torch.nn.Embedding)):
             # Slightly different from the TF version which uses truncated_normal for initialization
@@ -165,12 +171,12 @@ def init_bert_weights(module, initializer_range, extra_modules_without_weights=(
     for mm in module.modules():
         _do_init(mm)
 
+
 def get_linear_layer_init_identity(dim):
     ret = torch.nn.Linear(dim, dim)
     ret.weight.data.copy_(torch.eye(dim))
     ret.bias.data.fill_(0.0)
     return ret
-
 
 
 class JsonFile:
@@ -210,4 +216,3 @@ class JsonFile:
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         self._file.__exit__(exc_type, exc_val, exc_tb)
-
