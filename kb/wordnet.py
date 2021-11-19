@@ -330,7 +330,6 @@ class WordNetCandidateMentionGenerator(MentionGenerator):
                       'candidate_entities': [],
                       'candidate_entity_priors': []}
 
-        tokenized_text = gold_annotations['tokenized_text']
         for k in range(len(gold_annotations['gold_spans'])):
             span = gold_annotations['gold_spans'][k]
             lemma = gold_annotations['gold_lemmas'][k]
@@ -670,6 +669,7 @@ class WordNetAllEmbedding(torch.nn.Module, EntityEmbedder):
         - get list of unique entity ids
         - look up
         - concat POS embedding
+            > POS embedding is optional and trained
         - linear project
         - remap to candidate embedding shape
     """

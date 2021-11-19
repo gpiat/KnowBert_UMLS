@@ -1,17 +1,27 @@
-from typing import Dict, List, Sequence, Union
 import copy
+
+from typing import Dict
+from typing import List
+from typing import Sequence
 
 import numpy as np
 
-from allennlp.data.fields import Field, TextField, ListField, SpanField, ArrayField, LabelField
-from allennlp.data.token_indexers import TokenIndexer, SingleIdTokenIndexer
 from allennlp.data import Token
-from pytorch_pretrained_bert.tokenization import BertTokenizer, BasicTokenizer
+from allennlp.data.fields import ArrayField
+from allennlp.data.fields import Field
+from allennlp.data.fields import ListField
+from allennlp.data.fields import SpanField
+from allennlp.data.fields import TextField
+from allennlp.data.token_indexers import SingleIdTokenIndexer
+from allennlp.data.token_indexers import TokenIndexer
+from pytorch_pretrained_bert.tokenization import BasicTokenizer
+from pytorch_pretrained_bert.tokenization import BertTokenizer
 
-from kb.dict_field import DictField
 from allennlp.common.registrable import Registrable
+from kb.dict_field import DictField
 
-from kb.common import MentionGenerator, get_empty_candidates
+from kb.common import MentionGenerator
+from kb.common import get_empty_candidates
 
 start_token = "[CLS]"
 sep_token = "[SEP]"
@@ -61,7 +71,8 @@ class BertTokenizerAndCandidateGenerator(Registrable):
         # for bert, we'll give an empty token indexer with empty name space
         # and do the indexing directly with the bert vocab to bypass
         # indexing in the indexer
-        self._bert_single_id_indexer = {'tokens': SingleIdTokenIndexer('__bert__')}
+        self._bert_single_id_indexer = {
+            'tokens': SingleIdTokenIndexer('__bert__')}
         self.do_lowercase = do_lower_case
         self.whitespace_tokenize = whitespace_tokenize
         self.dtype = np.float32
@@ -96,29 +107,36 @@ class BertTokenizerAndCandidateGenerator(Registrable):
 
         if text_b is not None:
             offsets_b, grouped_wp_b, tokens_b = self._tokenize_text(text_b)
-            truncate_sequence_pair(grouped_wp_a, grouped_wp_b, self.max_word_piece_sequence_length - 3)
+            truncate_sequence_pair(
+                grouped_wp_a, grouped_wp_b, self.max_word_piece_sequence_length - 3)
             offsets_b = offsets_b[:len(grouped_wp_b)]
             tokens_b = tokens_b[:len(grouped_wp_b)]
-            instance_b = self._generate_sentence_entity_candidates(tokens_b, offsets_b)
-            word_piece_tokens_b = [word_piece for word in grouped_wp_b for word_piece in word]
+            instance_b = self._generate_sentence_entity_candidates(
+                tokens_b, offsets_b)
+            word_piece_tokens_b = [
+                word_piece for word in grouped_wp_b for word_piece in word]
         else:
             length_a = sum([len(x) for x in grouped_wp_a])
             while self.max_word_piece_sequence_length - 2 < length_a:
                 discarded = grouped_wp_a.pop()
                 length_a -= len(discarded)
 
-        word_piece_tokens_a = [word_piece for word in grouped_wp_a for word_piece in word]
+        word_piece_tokens_a = [
+            word_piece for word in grouped_wp_a for word_piece in word]
         offsets_a = offsets_a[:len(grouped_wp_a)]
         tokens_a = tokens_a[:len(grouped_wp_a)]
-        instance_a = self._generate_sentence_entity_candidates(tokens_a, offsets_a)
+        instance_a = self._generate_sentence_entity_candidates(
+            tokens_a, offsets_a)
 
         # If we got 2 sentences.
         if text_b is not None:
             # Target length should include start and two end tokens, and then be divided equally between both sentences
             # Note that this will result in potentially shorter documents than original target length,
             # if one (or both) of the sentences are shorter than half the target length.
-            tokens = [start_token] + word_piece_tokens_a + [sep_token] + word_piece_tokens_b + [sep_token]
-            segment_ids = (len(word_piece_tokens_a) + 2) * [0] + (len(word_piece_tokens_b) + 1) * [1]
+            tokens = [start_token] + word_piece_tokens_a + \
+                [sep_token] + word_piece_tokens_b + [sep_token]
+            segment_ids = (len(word_piece_tokens_a) + 2) * \
+                [0] + (len(word_piece_tokens_b) + 1) * [1]
             offsets_a = [x + 1 for x in offsets_a]
             offsets_b = [x + 2 + len(word_piece_tokens_a) for x in offsets_b]
         # Single sentence
@@ -154,8 +172,8 @@ class BertTokenizerAndCandidateGenerator(Registrable):
 
                 # Merging each of the fields.
                 for key in ['candidate_entities', 'candidate_spans', 'candidate_entity_priors']:
-                    candidates[entity_type][key] = candidate_instance_a[key] + candidate_instance_b[key]
-
+                    candidates[entity_type][key] = candidate_instance_a[key] + \
+                        candidate_instance_b[key]
 
         for entity_type in candidates.keys():
             # deal with @@PADDING@@
@@ -175,7 +193,8 @@ class BertTokenizerAndCandidateGenerator(Registrable):
                     # remove all the padding entities since have some valid
                     indices_to_remove = padding_indices
                 elif len(padding_indices) > 0:
-                    assert len(padding_indices) == len(candidates[entity_type]['candidate_entities'])
+                    assert len(padding_indices) == len(
+                        candidates[entity_type]['candidate_entities'])
                     indices_to_remove = padding_indices[1:]
                 for ind in reversed(indices_to_remove):
                     del candidates[entity_type]["candidate_spans"][ind]
@@ -226,7 +245,8 @@ class BertTokenizerAndCandidateGenerator(Registrable):
         assert len(tokens) == len(offsets), f'Length of tokens {len(tokens)} must equal that of offsets {len(offsets)}.'
         entity_instances = {}
         for name, mention_generator in self.candidate_generators.items():
-            entity_instances[name] = mention_generator.get_mentions_raw_text(' '.join(tokens), whitespace_tokenize=True)
+            entity_instances[name] = mention_generator.get_mentions_raw_text(
+                ' '.join(tokens), whitespace_tokenize=True)
 
         for name, entities in entity_instances.items():
             candidate_spans = entities["candidate_spans"]
@@ -250,9 +270,9 @@ class BertTokenizerAndCandidateGenerator(Registrable):
         fields = {}
 
         fields['tokens'] = TextField(
-                [Token(t, text_id=self.bert_tokenizer.vocab[t])
-                    for t in tokens_and_candidates['tokens']],
-                token_indexers=self._bert_single_id_indexer
+            [Token(t, text_id=self.bert_tokenizer.vocab[t])
+             for t in tokens_and_candidates['tokens']],
+            token_indexers=self._bert_single_id_indexer
         )
 
         fields['segment_ids'] = ArrayField(
@@ -264,7 +284,7 @@ class BertTokenizerAndCandidateGenerator(Registrable):
             # pad the prior to create the array field
             # make a copy to avoid modifying the input
             candidate_entity_prior = copy.deepcopy(
-                    entity_candidates['candidate_entity_priors']
+                entity_candidates['candidate_entity_priors']
             )
             max_cands = max(len(p) for p in candidate_entity_prior)
             for p in candidate_entity_prior:
@@ -275,15 +295,16 @@ class BertTokenizerAndCandidateGenerator(Registrable):
             candidate_fields = {
                 "candidate_entity_priors": ArrayField(np_prior, dtype=self.dtype),
                 "candidate_entities": TextField(
-                    [Token(" ".join(candidate_list)) for candidate_list in entity_candidates["candidate_entities"]],
+                    [Token(" ".join(candidate_list))
+                     for candidate_list in entity_candidates["candidate_entities"]],
                     token_indexers={'ids': self._entity_indexers[key]}),
                 "candidate_spans": ListField(
                     [SpanField(span[0], span[1], fields['tokens']) for span in
-                    entity_candidates['candidate_spans']]
+                     entity_candidates['candidate_spans']]
                 ),
                 "candidate_segment_ids": ArrayField(
                     np.array(entity_candidates['candidate_segment_ids']), dtype=np.int
-        )
+                )
             }
             all_candidates[key] = DictField(candidate_fields)
 
@@ -301,6 +322,7 @@ class PretokenizedTokenizerAndCandidateGenerator(BertTokenizerAndCandidateGenera
     # TODO: mypy is not going to like us calling ``tokenize_and_generate_candidates()`` on lists
     # instead of strings. Maybe update type annotations in ``BertTokenizerAndCandidateGenerator``?
     """
+
     def _tokenize_text(self, tokens: List[str]):
         word_piece_tokens = []
         offsets = [0]
