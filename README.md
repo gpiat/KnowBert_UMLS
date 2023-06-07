@@ -33,7 +33,7 @@ Cite KnowBert-UMLS:
 
 ```
 git clone git@github.com:gpiat/KnowBert_UMLS.git
-cd KnowBert-UMLS
+cd KnowBert_UMLS
 conda create -n knowbert python=3.6.7
 source activate knowbert
 conda install pip
@@ -54,7 +54,7 @@ sed -i "s/spacy>=2.0,<2.1/spacy==2.3.7/g" requirements.txt
 sed -i "s/spacy>=2.0,<2.1/spacy==2.3.7/g" setup.py
 # build and install with pip
 pip install -e .
-cd ../KnowBert-UMLS
+cd ../KnowBert_UMLS
 pip install -r requirements.txt
 # required for allennlp
 python -m spacy download en_core_web_sm
