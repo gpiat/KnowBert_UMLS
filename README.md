@@ -32,8 +32,7 @@ Cite KnowBert-UMLS:
 ## Getting started
 
 ```
-git clone git@github.com:gpiat/KnowBert-UMLS.git
-git clone git@github.com:allenai/kb.git
+git clone git@github.com:gpiat/KnowBert_UMLS.git
 cd KnowBert-UMLS
 conda create -n knowbert python=3.6.7
 source activate knowbert
