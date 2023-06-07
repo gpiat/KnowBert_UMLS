@@ -1,0 +1,30 @@
+{"e94d8f34ac329c0cd350088ee78c8bb7": {
+    "tokenized_text": "Figure 12 shows the chloride ion penetration resistance experiment results for the concrete specimens.",
+    "candidate_spans": [[4, 4], [5, 6], [5, 7], [7, 7], [9, 9], [13, 13]],
+    "candidate_entities": [["C0201952", "C4553021"], ["C0015409", "C0423746"], ["C4329620"], ["C0795889", "C1514892", "C0237834"], ["C2825142"], ["C2698634", "C2347026"]],
+    "candidate_entity_priors": [[0.5, 0.5], [0.5, 0.5], [1.0], [0.02564102564102564, 0.9487179487179487, 0.02564102564102564], [1.0], [0.02040816326530612, 0.9795918367346939]]},
+"4ea93edfbea71bb94964225121a0599b": {
+    "tokenized_text": "In the same manner as in Section 4.2.2, the test results are subsequently discussed in terms of three influencing factors: (1) mix proportioning method, (2) with and without RCA coating treatment, and (3) RCA replacement ratio.",
+    "candidate_spans": [[23, 23], [28, 28], [29, 29], [33, 33], [34, 34], [35, 35]],
+    "candidate_entities": [["C0871511", "C0025663", "C2828387", "C2827714"], ["C4725622"], ["C1552080"], ["C4725622"], ["C0035139", "C0441587", "C1555302", "C1533810"], ["C1547037"]],
+    "candidate_entity_priors": [[0.11567164179104478, 0.8768656716417911, 0.0037313432835820895, 0.0037313432835820895], [1.0], [1.0], [1.0], [0.08, 0.32, 0.04, 0.56], [1.0]]},
+"6f266d5ab3dcdc7cf618aa0888fbf19a": {
+    "tokenized_text": "The effect of RCA coating on the RCPT results was studied, and their average test results are plotted in Figure 14.",
+    "candidate_spans": [[1, 1], [3, 3], [4, 4], [8, 8], [14, 15], [15, 15]],
+    "candidate_entities": [["C1518681"], ["C4725622"], ["C1552080"], ["C2825142"], ["C0456984", "C1705651", "C0587081", "C1881460"], ["C2825142"]],
+    "candidate_entity_priors": [[1.0], [1.0], [1.0], [1.0], [0.8431372549019608, 0.00980392156862745, 0.13725490196078433, 0.00980392156862745], [1.0]]},
+"c62051101f2bdf27533ab6dc18e4ea88": {
+    "tokenized_text": "Treatment of the NCS is controversial and there are several available options, including follow-up, conservative treatment and surgical therapy.",
+    "candidate_spans": [[3, 3], [11, 11], [13, 13], [13, 15], [14, 15], [17, 17]],
+    "candidate_entities": [["C0027597"], ["C0683525"], ["C1719822"], ["C0459914"], ["C0459914"], ["C0543467", "C0587668"]],
+    "candidate_entity_priors": [[1.0], [1.0], [1.0], [1.0], [1.0], [0.9537037037037037, 0.046296296296296294]]},
+"8f57d122a76c4c86cec37478cdd65c0e": {
+    "tokenized_text": "Figure 14a-d show that the RCPT values of CRP-aS, CRP-bS, ERP-aS, and ERP-bS mixes decreased by 21%, 37%, 10%, and 24%, respectively, compared to those of CRP-a, CRP-b, ERP-a, and ERP-b.",
+    "candidate_spans": [[8, 8], [9, 9], [10, 10], [12, 12], [26, 26], [27, 27]],
+    "candidate_entities": [["C0201657", "C3890735"], ["C0201657", "C3890735"], ["C0008310", "C0337380", "C1997354"], ["C1997354", "C0008310", "C0337380"], ["C0201657", "C3890735"], ["C3890735", "C0201657"]],
+    "candidate_entity_priors": [[0.8333333333333334, 0.16666666666666666], [0.8333333333333334, 0.16666666666666666], [0.8333333333333334, 0.08333333333333333, 0.08333333333333333], [0.08333333333333333, 0.8333333333333334, 0.08333333333333333], [0.8333333333333334, 0.16666666666666666], [0.16666666666666666, 0.8333333333333334]]},
+"45605246d76a471ba7f15aeab2ebb6a3": {
+    "tokenized_text": "However, a significant interaction between the serum vitamin D level and obesity was identified.",
+    "candidate_spans": [[3, 3], [6, 6], [7, 9], [8, 9], [9, 9], [11, 11]],
+    "candidate_entities": [["C0687133", "C0037420"], ["C1550100", "C0229671", "C1546774"], ["C0428580", "C0919758", "C1318188"], ["C2097670"], ["C2946261"], ["C0028754", "C1963185"]],
+    "candidate_entity_priors": [[0.7111111111111111, 0.28888888888888886], [0.04861111111111111, 0.9444444444444444, 0.006944444444444444], [0.1, 0.8, 0.1], [1.0], [1.0], [0.9917355371900827, 0.008264462809917356]]}}

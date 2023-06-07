@@ -1,0 +1,39 @@
+#!/bin/bash
+#SBATCH -e convert_cands_jsonl_START_END.err
+#SBATCH -o convert_cands_jsonl_START_END.out
+
+#SBATCH --nodes=1
+#SBATCH --ntasks=1
+#SBATCH --mem=24G
+#SBATCH --time=0-17:00:00
+#SBATCH -p allcpu
+#SBATCH --job-name=convert_qumls_jsonl_to_cand_START_END
+#SBATCH --mail-type=end,fail
+#SBATCH --mail-user=guilhem.piat@cea.fr
+
+echo "Begin on machine :"
+hostname
+
+CONFIG="en_core_sci_lg-0.5-10-20220509-185326"
+
+W_DIR=`pwd`
+INPUT_DIRECTORY="/scratch/gpiat/pmc/jsonl_pregen_candidates/"$CONFIG
+OUTPUT_DIRECTORY="/media/pmc/jsonl_pregen_candidates/"$CONFIG"/candfiles"
+[ ! -d $INPUT_DIRECTORY ] && mkdir -p $INPUT_DIRECTORY
+[ ! -d $OUTPUT_DIRECTORY ] && mkdir -p $OUTPUT_DIRECTORY
+
+module purge # enabling ssh
+rsync -a -u gpiat@factoryia02:/media/pmc/jsonl_pregen_candidates/$CONFIG/data/{START..END}*.gz $INPUT_DIRECTORY/
+source ~/.bashrc # disabling ssh and enabling conda
+cd $W_DIR
+
+# we want to pass a glob to python so it can resolve the glob itself, therefore \[ / \]
+srun -n 1 python -u convert_SciSpaCy_jsonl_to_cand_file.py --in_files $INPUT_DIRECTORY/{START..END}*.gz &
+wait
+
+module purge # enabling ssh
+rsync -a -u $INPUT_DIRECTORY/{START..END}*.cand gpiat@factoryia02:$OUTPUT_DIRECTORY/
+
+echo "Done."
+
+

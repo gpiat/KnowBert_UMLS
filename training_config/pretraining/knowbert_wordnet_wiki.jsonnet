@@ -1,3 +1,5 @@
+// Warning : The value of this variable depends on the location this file is CALLED from
+local dir = std.extVar("PWD") + "/";
 
 local batch_size_per_gpu = 64;
 

@@ -1,10 +1,24 @@
 ''' Metric class for tracking correlations by saving predictions '''
+import logging
+import os
 import numpy as np
-from overrides import overrides
-from allennlp.training.metrics.metric import Metric
-from sklearn.metrics import matthews_corrcoef, confusion_matrix
-from scipy.stats import pearsonr, spearmanr
+import pickle
 import torch
+from datetime import datetime
+
+from allennlp.training.metrics.metric import Metric
+from overrides import overrides
+from scipy.stats import pearsonr
+from scipy.stats import spearmanr
+from sklearn.metrics import confusion_matrix
+from sklearn.metrics import matthews_corrcoef
+
+from seqeval.metrics import accuracy_score
+from seqeval.metrics import f1_score
+from seqeval.metrics import precision_score
+from seqeval.metrics import recall_score
+
+logger = logging.getLogger(__name__)
 
 
 @Metric.register("fastMatthews")
@@ -93,7 +107,8 @@ class Correlation(Metric):
 
     def __call__(self, predictions, labels):
         """ Accumulate statistics for a set of predictions and labels.
-        Values depend on correlation type; Could be binary or multivalued. This is handled by sklearn.
+        Values depend on correlation type; Could be binary or multivalued.
+        This is handled by sklearn.
         Args:
             predictions: Tensor or np.array
             labels: Tensor or np.array of same shape as predictions
@@ -105,11 +120,12 @@ class Correlation(Metric):
             labels = labels.cpu().numpy()
 
         # Verify shape match
-        assert predictions.shape == labels.shape, ("Predictions and labels must"
-                                                   " have matching shape. Got:"
+        assert predictions.shape == labels.shape, ("Predictions and labels "
+                                                   "must have matching shape. "
+                                                   "Got:"
                                                    " preds=%s, labels=%s" % (
-                                                           str(predictions.shape),
-                                                           str(labels.shape)))
+                                                       str(predictions.shape),
+                                                       str(labels.shape)))
         if self.corr_type == 'matthews':
             assert predictions.dtype in [np.int32, np.int64, int]
             assert labels.dtype in [np.int32, np.int64, int]
@@ -186,7 +202,8 @@ class MicroF1(Metric):
         mask = mask.detach().cpu().numpy()
 
         gold_negative = labels.eq(self._negative_label).detach().cpu().numpy()
-        pred_negative = predictions.eq(self._negative_label).detach().cpu().numpy()
+        pred_negative = predictions.eq(
+            self._negative_label).detach().cpu().numpy()
 
         correct = (predictions == labels).detach().cpu().numpy()
         incorrect = (predictions != labels).detach().cpu().numpy()
@@ -212,3 +229,143 @@ class MicroF1(Metric):
         self._tp = 0
         self._fp = 0
         self._fn = 0
+
+
+@Metric.register('seqeval')
+class SeqEval(Metric):
+    def __init__(self, label_map, all_pred_f=None, all_lab_f=None):
+        """ args:
+                label_map: a dict of the form {"label": index}, the same one
+                    that was used to numericalize the labels in the first
+                    place.
+                all_pred_f=None: name of file in which to store all
+                    predictions. Each batch will reload the file and append
+                    the current batch. Particularly useful for doing stats
+                    on an entire corpus. If None, will create a timestamped
+                    file.
+                all_lab_f=None: name of file in which to store all labels.
+                    Each batch will reload the file and append the current
+                    batch. Particularly useful for doing stats on an entire
+                    corpus. If None, will create a timestamped file.
+        """
+        self.rec = 0.
+        self.f1 = 0.
+        self.prec = 0.
+        self.label_map = {v: k for k, v in label_map.items()}
+        self.all_pred_f = all_pred_f
+        self.all_lab_f = all_lab_f
+
+        date = list(datetime.now().timetuple())[:6]
+        timestamp = '_'.join([str(i) for i in date]) + '_'
+        if all_pred_f is None:
+            self.all_pred_f = timestamp + 'seqeval_pred.out'
+        if all_lab_f is None:
+            self.all_lab_f = timestamp + 'seqeval_lab.out'
+
+    def __call__(self, predictions, labels, mask=None):
+        """ Args:
+                predictions: list of predicted label ids (one per subtoken)
+                labels: list of true label ids (one per subtoken)
+                mask: The attention mask. List of booleans or equivalent
+                    0s/1s, one per subtoken, with True for non-padding
+                    tokens and False for padding tokens.
+        """
+        if mask is None:
+            mask = torch.ones_like(labels, dtype=torch.uint8)
+        mask = mask.tolist()
+
+        assert predictions.size() == labels.size()
+
+        predictions = self.to_IOB2(predictions.int().tolist(), mask)
+        labels = self.to_IOB2(labels.int().tolist(), mask)
+
+        # currently our predictions and labels are wordpiece-based
+        predictions, labels = self.wordpiece_to_word(predictions, labels)
+
+        # if requested, handle the cross-batch prediction/label backups
+        if self.all_pred_f is not None:
+            try:
+                with open(self.all_pred_f, 'rb') as f:
+                    allpred = pickle.load(f)
+                allpred.extend(predictions)
+            except FileNotFoundError:
+                allpred = predictions
+            outDir:str = os.path.dirname(self.all_pred_f)
+            if outDir is not "":
+                os.makedirs(outDir, exist_ok=True)
+            with open(self.all_pred_f, 'wb') as f:
+                pickle.dump(allpred, f)
+        if self.all_lab_f is not None:
+            try:
+                with open(self.all_lab_f, 'rb') as f:
+                    alllab = pickle.load(f)
+                alllab.extend(labels)
+            except FileNotFoundError:
+                alllab = labels
+            outDir:str = os.path.dirname(self.all_lab_f)
+            if outDir is not "":
+                os.makedirs(outDir, exist_ok=True)
+            with open(self.all_lab_f, 'wb') as f:
+                pickle.dump(alllab, f)
+
+        try:
+            self.prec = precision_score(labels, predictions)
+            self.rec = recall_score(labels, predictions)
+            self.f1 = f1_score(labels, predictions)
+        except ValueError as e:
+            logger.error("Error: could not compute Precision/"
+                         "Recall/F1. Too few classes.")
+            logger.error(f"labels: {labels}")
+            logger.error(f"predictions: {predictions}")
+            raise e
+
+        self.acc = accuracy_score(labels, predictions)
+
+    def get_metric(self, reset=False):
+        ret_values = self.acc, self.prec, self.rec, self.f1
+        if reset:
+            self.reset()
+        return ret_values
+
+    @overrides
+    def reset(self):
+        self.rec = 0.
+        self.f1 = 0.
+        self.prec = 0.
+
+    def to_IOB2(self, taglist, mask):
+        """ Takes predictions of the form [[1, 2, 1], [1, 3, ...]]
+            and returns an IOB2-formatted prediction with no padding.
+            Args:
+                pred (Tensor): the model's predictions for the sequence
+        """
+
+        # Currently, taglist contains label IDs instead of actual labels,
+        # since that's what the model understands. Here, we're switching
+        # the IDs with the labels themselves.
+        taglist = [[p for j, p in enumerate(seq) if mask[i][j]]
+                   for i, seq in enumerate(taglist)]
+        taglist = [[self.label_map[tok] for tok in seq] for seq in taglist]
+        return taglist
+
+    def wordpiece_to_word(self, predictions, labels):
+        """ Remove predictions that correspond to non-token-starting
+            wordpieces. The corresponding labels are [PAD] labels.
+        """
+        # remove predictions that correspond to padding tokens or to
+        # non-token-starting wordpieces
+        predictions = [[p for j, p in enumerate(seq)
+                        if labels[i][j] != '[PAD]']
+                       for i, seq in enumerate(predictions)]
+        # The model may have predicted incorrectly that some real tokens
+        # are padding tokens. This would break the evaluation, so we naively
+        # assume that these would otherwise be labeled 'O'. This is definitely
+        # wrong and suboptimal for performance, but it's simple.
+        predictions = [[p if p != '[PAD]' else 'O' for p in seq]
+                       for seq in predictions]
+        # remove labels that correspond to padding tokens or to
+        # non-token-starting wordpieces
+        labels = [[lab for lab in seq
+                   if lab != '[PAD]']
+                  for seq in labels]
+        return predictions, labels

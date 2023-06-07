@@ -59,7 +59,8 @@ class F1Metric(Metric):
     def __init__(self, filter_func=None):
         self.reset()
         if filter_func is None:
-            def filter_func(x): return True
+            def filter_func(x):
+                return True
         self.filter_func = filter_func
 
     def reset(self):
@@ -71,10 +72,11 @@ class F1Metric(Metric):
         """
         Returns
         -------
-        A tuple of the following metrics based on the accumulated count statistics:
-        precision : float
-        recall : float
-        f1-measure : float
+        A tuple of the following metrics based on the accumulated count
+        statistics:
+            precision : float
+            recall : float
+            f1-measure : float
         """
         precision = float(self._true_positives) / \
             float(self._true_positives + self._false_positives + 1e-13)
@@ -134,14 +136,16 @@ def set_requires_grad(module, requires_grad):
 def extend_attention_mask_for_bert(mask, dtype):
     # mask = (batch_size, timesteps)
     # returns an attention_mask useable with BERT
-    # see: https://github.com/huggingface/pytorch-pretrained-BERT/blob/master/pytorch_pretrained_bert/modeling.py#L696
+    # see: https://github.com/huggingface/pytorch-pretrained-BERT/blob/master/
+    #      pytorch_pretrained_bert/modeling.py#L696
     extended_attention_mask = mask.unsqueeze(1).unsqueeze(2)
     extended_attention_mask = extended_attention_mask.to(dtype=dtype)
     extended_attention_mask = (1.0 - extended_attention_mask) * -10000.0
     return extended_attention_mask
 
 
-def init_bert_weights(module, initializer_range, extra_modules_without_weights=()):
+def init_bert_weights(module, initializer_range,
+                      extra_modules_without_weights=()):
     # these modules don't have any weights, other then ones in submodules,
     # so don't have to worry about init
     modules_without_weights = (
@@ -154,7 +158,8 @@ def init_bert_weights(module, initializer_range, extra_modules_without_weights=(
 
     def _do_init(m):
         if isinstance(m, (torch.nn.Linear, torch.nn.Embedding)):
-            # Slightly different from the TF version which uses truncated_normal for initialization
+            # Slightly different from the TF version which uses
+            # truncated_normal for initialization
             # cf https://github.com/pytorch/pytorch/pull/5617
             m.weight.data.normal_(mean=0.0, std=initializer_range)
         elif isinstance(m, BertLayerNorm):

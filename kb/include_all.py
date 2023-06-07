@@ -1,29 +1,42 @@
 
-from kb.kg_embedding import KGTupleReader, KGTupleModel
-from kb.entity_linking import TokenCharactersIndexerTokenizer
-from kb.entity_linking import CrossSentenceLinking
-from kb.wordnet import WordNetFineGrainedSenseDisambiguationReader
-from kb.wordnet import WordNetAllEmbedding
-from kb.multitask import MultitaskDatasetReader, MultiTaskDataIterator
 from kb.bert_pretraining_reader import BertPreTrainingReader
-from kb.bert_tokenizer_and_candidate_generator import BertTokenizerAndCandidateGenerator, TokenizerAndCandidateGenerator
-from kb.self_attn_bucket_iterator import SelfAttnBucketIterator
-from kb.knowbert import KnowBert, BertPretrainedMaskedLM
+from kb.bert_tokenizer_and_candidate_generator import BertTokenizerAndCandidateGenerator
+from kb.bert_tokenizer_and_candidate_generator import TokenizerAndCandidateGenerator
 from kb.bert_utils import GeLu
-from kb.wiki_linking_reader import LinkingReader
+from kb.entity_linking import CrossSentenceLinking
+from kb.entity_linking import TokenCharactersIndexerTokenizer
+from kb.kg_embedding import KGTupleModel
+from kb.kg_embedding import KGTupleReader
 from kb.kg_probe_reader import KgProbeReader
+from kb.knowbert import BertPretrainedMaskedLM
+from kb.knowbert import KnowBert
+from kb.multitask import MultiTaskDataIterator
+from kb.multitask import MultitaskDatasetReader
+from kb.self_attn_bucket_iterator import SelfAttnBucketIterator
+from kb.sharded_dataset_reader import ShardedDatasetReader
+from kb.umls_linking_reader import UMLSEntityLinkingReader
+from kb.umls_candidate_gen import SciSpaCyUMLSCandidateMentionGenerator
+from kb.umls_candidate_gen import QuickUMLSCandidateMentionGenerator
+from kb.wiki_linking_reader import LinkingReader
+from kb.wordnet import WordNetAllEmbedding
+from kb.wordnet import WordNetFineGrainedSenseDisambiguationReader
 
 from kb.evaluation.classification_model import SimpleClassifier
-from kb.evaluation.tacred_dataset_reader import TacredDatasetReader
-from kb.evaluation.wic_dataset_reader import WicDatasetReader
-from kb.evaluation.semeval2010_task8 import SemEval2010Task8Reader, SemEval2010Task8Metric
 from kb.evaluation.fbeta_measure import FBetaMeasure
+from kb.evaluation.iob_reader import IOB2NERReader
+from kb.evaluation.chemprot_reader import ChemprotRelationExtractionReader
+from kb.evaluation.snli_reader import SNLIReader
+from kb.evaluation.cola_reader import COLAReader
+from kb.evaluation.semeval2010_task8 import SemEval2010Task8Metric
+from kb.evaluation.semeval2010_task8 import SemEval2010Task8Reader
+from kb.evaluation.tacred_dataset_reader import TacredDatasetReader
 from kb.evaluation.ultra_fine_reader import UltraFineReader
+from kb.evaluation.wic_dataset_reader import WicDatasetReader
 
 from kb.common import F1Metric
 
-from allennlp.models.archival import load_archive
 from allennlp.models import Model
+from allennlp.models.archival import load_archive
 
 import json
 

@@ -1,3 +1,8 @@
+// Warning : The value of this variable depends on the location this file is CALLED from
+local dir = std.extVar("PWD") + "/";
+
+local batch_size_per_gpu = 32;
+
 {
     "vocabulary": {
         "directory_path": "https://allennlp.s3-us-west-2.amazonaws.com/knowbert/models/vocabulary_wordnet.tar.gz",
@@ -31,7 +36,7 @@
 
     "iterator": {
         "type": "cross_sentence_linking",
-        "batch_size": 32,
+        "batch_size": batch_size_per_gpu,
         "entity_indexer": {
             "type": "characters_tokenizer",
             "tokenizer": {

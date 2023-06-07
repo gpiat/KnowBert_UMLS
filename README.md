@@ -20,21 +20,109 @@ Citation:
 ## Getting started
 
 ```
+git clone git@github.com:gpiat/KnowBert-UMLS.git
 git clone git@github.com:allenai/kb.git
-cd kb
+cd KnowBert-UMLS
 conda create -n knowbert python=3.6.7
 source activate knowbert
-pip install torch==1.2.0
+conda install pip
+conda install -c pytorch pytorch=1.2.0=py3.6_cuda10.0.130_cudnn7.6.2_0
+conda install -c conda-forge jsonnet
+# the default version of certifi installed with jsonnet doesn't work with allennlp and pip can't fix it
+conda install certifi
+
+# we need a specific unreleased version of allennlp and scispacy, which have conflicting requirements for the version of spacy.
+# However, the allennlp package is overly restrictive with its version of spacy, so we can change it.
+# first, exit working dir and clone the allennlp repo
+cd ..
+git clone https://github.com/matt-peters/allennlp.git
+cd allennlp
+git checkout fp16_e_s3
+# replace the version of spacy by 2.3.7
+sed -i "s/spacy>=2.0,<2.1/spacy==2.3.7/g" requirements.txt
+sed -i "s/spacy>=2.0,<2.1/spacy==2.3.7/g" setup.py
+# build and install with pip
+pip install -e .
+cd ../KnowBert-UMLS
 pip install -r requirements.txt
-python -c "import nltk; nltk.download('wordnet')"
+# required for allennlp
 python -m spacy download en_core_web_sm
+# required for quickUMLS
+python -m spacy download en
+# yes, en and en_core_web_sm are the same thing. you still need to do both.
+python -c "import nltk; nltk.download('wordnet')"
+#if didn't install with requirements
+#python -m spacy download en_core_web_sm
 pip install --editable .
+# run first time setup script
+python first_time_setup.py
 ```
+If on a computing cluster with nodes that do not connect to the internet, you must download certain files and replace their URL in SciSpacy, as follows :
+
+1. Pick or create a repository to store the files. As an example in theses steps, we will be using absolute path `home/martin/.scispacy/umls/`. Though you can replace with your own path.
+
+2. Download the files :
+```
+curl -o home/martin/.scispacy/umls/nmslib_index.bin https://s3-us-west-2.amazonaws.com/ai2-s2-scispacy/data/linkers/2020-10-09/umls/nmslib_index.bin
+curl -o home/martin/.scispacy/umls/tfidf_vectorizer.joblib https://s3-us-west-2.amazonaws.com/ai2-s2-scispacy/data/linkers/2020-10-09/umls/tfidf_vectorizer.joblib
+curl -o home/martin/.scispacy/umls/tfidf_vectors_sparse.npz https://s3-us-west-2.amazonaws.com/ai2-s2-scispacy/data/linkers/2020-10-09/umls/tfidf_vectors_sparse.npz
+curl -o home/martin/.scispacy/umls/concept_aliases.json https://s3-us-west-2.amazonaws.com/ai2-s2-scispacy/data/linkers/2020-10-09/umls/concept_aliases.json
+
+curl -o home/martin/.scispacy/umls/umls_2020_aa_cat0129.jsonl https://s3-us-west-2.amazonaws.com/ai2-s2-scispacy/data/kbs/2020-10-09/umls_2020_aa_cat0129.jsonl
+curl -o home/martin/.scispacy/umls/umls_semantic_type_tree.tsv https://s3-us-west-2.amazonaws.com/ai2-s2-scispacy/data/umls_semantic_type_tree.tsv
+```
+
+3. Find lines 43-48 of `<your home dir>/.conda/envs/knowbert/lib/python3.6/site-packages/scispacy/candidate_generation.py`.
+Warning : The path to this file might differ from this depending on your OS or Anaconda. What you need to find is the packages repository used by your Python interpreter. Also note that "knowbert" is the name of the Conda environment here.
+
+4. Replace as follows :
+. 
+```
+UmlsLinkerPaths = LinkerPaths(
+    ann_index="https://s3-us-west-2.amazonaws.com/ai2-s2-scispacy/data/linkers/2020-10-09/umls/nmslib_index.bin",  # noqa
+    tfidf_vectorizer="https://s3-us-west-2.amazonaws.com/ai2-s2-scispacy/data/linkers/2020-10-09/umls/tfidf_vectorizer.joblib",  # noqa
+    tfidf_vectors="https://s3-us-west-2.amazonaws.com/ai2-s2-scispacy/data/linkers/2020-10-09/umls/tfidf_vectors_sparse.npz",  # noqa
+    concept_aliases_list="https://s3-us-west-2.amazonaws.com/ai2-s2-scispacy/data/linkers/2020-10-09/umls/concept_aliases.json",  # noqa
+)
+```
+becomes...
+```
+UmlsLinkerPaths = LinkerPaths(
+    ann_index="/home/martin/.scispacy/umls/nmslib_index.bin",  # noqa
+    tfidf_vectorizer="/home/martin/.scispacy/umls/tfidf_vectorizer.joblib",  # noqa
+    tfidf_vectors="/home/martin/.scispacy/umls/tfidf_vectors_sparse.npz",  # noqa
+    concept_aliases_list="/home/martin/.scispacy/umls/concept_aliases.json",  # noqa
+)
+```
+
+5. Find lines 39-40 of `<your home dir>/.conda/envs/knowbert/lib/python3.6/site-packages/scispacy/linking_utils.py`.
+Warning : same as step 3
+
+6. Replace as follows :
+```
+DEFAULT_UMLS_PATH = "https://s3-us-west-2.amazonaws.com/ai2-s2-scispacy/data/kbs/2020-10-09/umls_2020_aa_cat0129.jsonl"  # noqa
+DEFAULT_UMLS_TYPES_PATH = "https://s3-us-west-2.amazonaws.com/ai2-s2-scispacy/data/umls_semantic_type_tree.tsv"
+```
+becomes...
+```
+DEFAULT_UMLS_PATH = "/home/martin/.scispacy/umls/umls_2020_aa_cat0129.jsonl"  # noqa
+DEFAULT_UMLS_TYPES_PATH = "/home/martin/.scispacy/umls/umls_semantic_type_tree.tsv"
+```
+
+7. You're done. You can follow the next installation steps !
+
+
+
 
 Then make sure the tests pass:
 
 ```
 pytest -v tests
+```
+If it does not work, the solution might be to restart your conda environment :
+```
+conda deactivate knowbert
+conda activate knowbert
 ```
 
 

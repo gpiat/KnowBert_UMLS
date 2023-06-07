@@ -41,18 +41,21 @@ class UltraFineReader(DatasetReader):
             use [unused0] as the [ENTITY] token
 
     entity_masking = 'entity_markers':
-        [CLS] The left context [e1start] entity name [e1end] right context . [SEP]
+        [CLS] The left context [e1start] entity name\
+            [e1end] right context . [SEP]
     """
+
     def __init__(self,
-                 tokenizer_and_candidate_generator: TokenizerAndCandidateGenerator,
+                 tokenizer_and_candidate_generator:
+                 TokenizerAndCandidateGenerator,
                  entity_masking: str = 'entity',
                  lazy: bool = False) -> None:
         super().__init__(lazy=lazy)
-        self.tokenizer_and_candidate_generator = tokenizer_and_candidate_generator
+        self.tokenizer_and_candidate_generator =\
+            tokenizer_and_candidate_generator
         self.tokenizer_and_candidate_generator.whitespace_tokenize = True
         assert entity_masking in ('entity', 'entity_markers')
         self.entity_masking = entity_masking
-
 
     def _read(self, file_path: str) -> Iterable[Instance]:
         with open(cached_path(file_path), 'r') as f:
@@ -71,7 +74,11 @@ class UltraFineReader(DatasetReader):
                 span = span.strip()
                 index_entity_start = None
             elif self.entity_masking == 'entity_markers':
-                sentence = left.strip() + ' [e1start] ' + span.strip() + ' [e1end] ' + right.strip()
+                sentence = (left.strip() +
+                            ' [e1start] ' +
+                            span.strip() +
+                            ' [e1end] ' +
+                            right.strip())
                 span = None
                 index_entity_start = sentence.split().index('[e1start]')
 
@@ -80,11 +87,17 @@ class UltraFineReader(DatasetReader):
             for label in example['labels']:
                 labels[LABEL_MAP[label]] = 1
 
-            yield self.text_to_instance(sentence, span, labels, index_entity_start)
+            yield self.text_to_instance(sentence,
+                                        span,
+                                        labels,
+                                        index_entity_start)
 
     def text_to_instance(self, sentence, span, labels, index_entity_start):
-        token_candidates = self.tokenizer_and_candidate_generator.tokenize_and_generate_candidates(sentence, span)
-        fields = self.tokenizer_and_candidate_generator.convert_tokens_candidates_to_fields(token_candidates)
+        shaz = self.tokenizer_and_candidate_generator
+        token_candidates = shaz.tokenize_and_generate_candidates(
+            sentence, span)
+        fields = shaz.convert_tokens_candidates_to_fields(
+            token_candidates)
         fields['label_ids'] = ArrayField(np.array(labels), dtype=np.int)
 
         # index of entity start
@@ -94,4 +107,3 @@ class UltraFineReader(DatasetReader):
             fields['index_a'] = LabelField(idx1_offset, skip_indexing=True)
 
         return Instance(fields)
-

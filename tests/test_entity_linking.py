@@ -9,7 +9,8 @@ from allennlp.common import Params
 from allennlp.models import Model
 
 from kb.entity_linking import TokenCharactersIndexerTokenizer
-from kb.entity_linking import remap_span_indices_after_subword_tokenization
+#from kb.entity_linking import remap_span_indices_after_subword_tokenization
+from allennlp.data.instance import remap_span_indices_after_subword_tokenization
 from kb.testing import get_bert_test_fixture
 from kb.include_all import ModelArchiveFromParams
 
