@@ -17,6 +17,18 @@ Citation:
 }
 ```
 
+Cite KnowBert-UMLS:
+
+```
+@inproceedings{piat2022adapting,
+  title={Adapting without forgetting: KnowBert-UMLS},
+  author={Piat, Guilhem and Semmar, Nasredine and Allauzen, Alexandre and Essafi, Hassane and Bernard, Ga{\"e}l and Tourille, Julien},
+  booktitle={2022 18th International Conference on Wireless and Mobile Computing, Networking and Communications (WiMob)},
+  pages={19--24},
+  year={2022},
+  organization={IEEE}
+}
+```
 ## Getting started
 
 ```
