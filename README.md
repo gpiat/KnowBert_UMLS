@@ -62,8 +62,6 @@ python -m spacy download en_core_web_sm
 python -m spacy download en
 # yes, en and en_core_web_sm are the same thing. you still need to do both.
 python -c "import nltk; nltk.download('wordnet')"
-#if didn't install with requirements
-#python -m spacy download en_core_web_sm
 pip install --editable .
 # run first time setup script
 python first_time_setup.py
