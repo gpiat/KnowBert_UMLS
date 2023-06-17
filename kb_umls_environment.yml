@@ -1,4 +1,4 @@
-name: kbumls2
+name: knowbert
 channels:
   - conda-forge
   - pytorch
