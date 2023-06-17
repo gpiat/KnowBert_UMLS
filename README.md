@@ -37,7 +37,9 @@ cd KnowBert_UMLS
 conda create -n knowbert python=3.6.7
 source activate knowbert
 conda install pip
-conda install -c pytorch pytorch=1.2.0=py3.6_cuda10.0.130_cudnn7.6.2_0
+# Old wheel install, broken
+# conda install -c pytorch pytorch=1.2.0=py3.6_cuda10.0.130_cudnn7.6.2_0
+conda install pytorch==1.2.0 cudatoolkit=10.0 -c pytorch
 conda install -c conda-forge jsonnet
 # the default version of certifi installed with jsonnet doesn't work with allennlp and pip can't fix it
 conda install certifi
